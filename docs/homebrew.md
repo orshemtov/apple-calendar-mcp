@@ -1,0 +1,42 @@
+# Homebrew Automation
+
+This repository publishes release binaries from `.github/workflows/release.yml` and then updates the Homebrew tap automatically.
+
+The workflow also supports manual runs with a `patch`, `minor`, or `major` bump. In that mode a helper script updates `Sources/AppleCalendarMCP/App/BuildInfo.swift`, then the workflow commits the version bump back to `main`, creates the git tag, publishes the release, and updates the tap.
+
+## What Happens On Each Tag
+
+When you push a tag like `v0.1.3` or run the workflow manually:
+
+1. GitHub Actions builds the macOS release binary.
+2. The workflow uploads `apple-calendar-mcp-<version>-macos-arm64.tar.gz` to the GitHub Release.
+3. The workflow checks out `orshemtov/homebrew-brew`.
+4. It rewrites `Formula/apple-calendar-mcp.rb` with the new release URL and SHA256.
+5. It commits and pushes the formula bump to the tap repository.
+
+For manual releases, the workflow first bumps `BuildInfo.swift`, commits that change, and creates the release tag automatically.
+
+After that, users can run:
+
+```bash
+brew update
+brew upgrade apple-calendar-mcp
+```
+
+## Required Secret
+
+Add this repository secret in `orshemtov/apple-calendar-mcp`:
+
+- `HOMEBREW_TAP_GITHUB_TOKEN`
+
+The token should be a GitHub personal access token that can push to `orshemtov/homebrew-brew`.
+
+Recommended permissions:
+
+- Contents: Read and write
+
+## Notes
+
+- `GITHUB_TOKEN` is used for creating or updating the release in this repository.
+- `HOMEBREW_TAP_GITHUB_TOKEN` is used only for pushing the formula update to the tap repo.
+- Homebrew users still need to run `brew update` and `brew upgrade`; installs do not auto-upgrade in the background.
