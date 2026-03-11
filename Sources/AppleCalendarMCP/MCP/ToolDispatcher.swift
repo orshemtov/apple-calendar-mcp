@@ -29,8 +29,10 @@ public struct ToolDispatcher: Sendable {
                 let items = try await eventStore.calendars(
                     sourceIDs: ToolArgumentParser.optionalStringArray("source_ids", from: params.arguments) ?? [],
                     writableOnly: ToolArgumentParser.optionalBool("writable_only", from: params.arguments),
-                    includeImmutable: ToolArgumentParser.optionalBool("include_immutable", from: params.arguments) ?? true,
-                    includeSubscribed: ToolArgumentParser.optionalBool("include_subscribed", from: params.arguments) ?? true
+                    includeImmutable: ToolArgumentParser.optionalBool("include_immutable", from: params.arguments)
+                        ?? true,
+                    includeSubscribed: ToolArgumentParser.optionalBool("include_subscribed", from: params.arguments)
+                        ?? true
                 )
                 return try result(message: "Listed \(items.count) calendars.", items: items)
 
@@ -70,7 +72,8 @@ public struct ToolDispatcher: Sendable {
                 return try mutationResult(message: payload.message, payload: payload)
 
             case ToolName.listEvents:
-                let items = try await eventStore.events(query: try makeEventQuery(from: params.arguments, defaultStarting: nil, defaultEnding: nil))
+                let items = try await eventStore.events(
+                    query: try makeEventQuery(from: params.arguments, defaultStarting: nil, defaultEnding: nil))
                 return try result(message: "Listed \(items.count) events.", items: items)
 
             case ToolName.listUpcomingEvents:
@@ -120,7 +123,8 @@ public struct ToolDispatcher: Sendable {
 
             case ToolName.bulkMoveEvents:
                 let ids = try requiredStringArray("event_ids", from: params.arguments)
-                let targetCalendarID = try ToolArgumentParser.requiredString("target_calendar_id", from: params.arguments)
+                let targetCalendarID = try ToolArgumentParser.requiredString(
+                    "target_calendar_id", from: params.arguments)
                 let dryRun = ToolArgumentParser.optionalBool("dry_run", from: params.arguments) ?? false
                 let span = try parseSpan(from: params.arguments)
                 let events = try await eventStore.bulkMoveEvents(
@@ -218,12 +222,16 @@ public struct ToolDispatcher: Sendable {
 
         case let payload as CalendarMutationResult:
             if let calendar = payload.calendar { lines.append(render(calendar: calendar)) }
-            if let deletedCalendarID = payload.deletedCalendarID { lines.append("Deleted calendar id: \(deletedCalendarID)") }
+            if let deletedCalendarID = payload.deletedCalendarID {
+                lines.append("Deleted calendar id: \(deletedCalendarID)")
+            }
 
         case let payload as BulkEventMutationResult:
             lines.append(payload.dryRun ? "Dry run: true" : "Dry run: false")
             lines.append("Span: \(payload.span)")
-            if let targetCalendarID = payload.targetCalendarID { lines.append("Target calendar id: \(targetCalendarID)") }
+            if let targetCalendarID = payload.targetCalendarID {
+                lines.append("Target calendar id: \(targetCalendarID)")
+            }
             lines.append(contentsOf: payload.affectedEvents.map(render(event:)))
 
         default:
@@ -240,7 +248,8 @@ public struct ToolDispatcher: Sendable {
 
     private func render(calendar: EventCalendar) -> String {
         let defaultMarker = calendar.isDefault ? "default" : "non-default"
-        let writable = calendar.allowsModifications && !calendar.isImmutable && !calendar.isSubscribed ? "writable" : "read-only"
+        let writable =
+            calendar.allowsModifications && !calendar.isImmutable && !calendar.isSubscribed ? "writable" : "read-only"
         return
             "- \(calendar.title) | id: \(calendar.id) | source: \(calendar.sourceTitle) (\(calendar.sourceType)) | \(defaultMarker) | \(writable) | color: \(calendar.colorHex ?? "none")"
     }
@@ -285,11 +294,14 @@ public struct ToolDispatcher: Sendable {
             startDate: try parseRequiredEventDate("start_date", from: arguments),
             endDate: try parseRequiredEventDate("end_date", from: arguments),
             location: ToolArgumentParser.optionalString("location", from: arguments),
-            structuredLocation: try parseStructuredLocation(from: ToolArgumentParser.optionalObject("structured_location", from: arguments)),
+            structuredLocation: try parseStructuredLocation(
+                from: ToolArgumentParser.optionalObject("structured_location", from: arguments)),
             notes: ToolArgumentParser.optionalString("notes", from: arguments),
             url: try ToolArgumentParser.optionalURL("url", from: arguments),
-            availability: try parseAvailabilityValue(ToolArgumentParser.optionalString("availability", from: arguments)),
-            alarms: try parseAlarmPatches(from: ToolArgumentParser.optionalObjectArray("alarms", from: arguments) ?? []),
+            availability: try parseAvailabilityValue(
+                ToolArgumentParser.optionalString("availability", from: arguments)),
+            alarms: try parseAlarmPatches(
+                from: ToolArgumentParser.optionalObjectArray("alarms", from: arguments) ?? []),
             recurrence: try parseRecurrence(from: ToolArgumentParser.optionalObject("recurrence", from: arguments))
         )
         guard request.startDate.date <= request.endDate.date else {
@@ -318,7 +330,8 @@ public struct ToolDispatcher: Sendable {
             ),
             structuredLocation: try patchValue(
                 clearFlag: ToolArgumentParser.optionalBool("clear_structured_location", from: arguments) ?? false,
-                value: parseStructuredLocation(from: ToolArgumentParser.optionalObject("structured_location", from: arguments)),
+                value: parseStructuredLocation(
+                    from: ToolArgumentParser.optionalObject("structured_location", from: arguments)),
                 key: "structured_location"
             ),
             notes: patchValue(
@@ -330,7 +343,8 @@ public struct ToolDispatcher: Sendable {
                 value: ToolArgumentParser.optionalURL("url", from: arguments),
                 key: "url"
             ),
-            availability: try parseAvailabilityValue(ToolArgumentParser.optionalString("availability", from: arguments)),
+            availability: try parseAvailabilityValue(
+                ToolArgumentParser.optionalString("availability", from: arguments)),
             alarms: try patchValue(
                 clearFlag: ToolArgumentParser.optionalBool("clear_alarms", from: arguments) ?? false,
                 value: parseAlarmPatches(from: ToolArgumentParser.optionalObjectArray("alarms", from: arguments) ?? []),
@@ -413,7 +427,8 @@ public struct ToolDispatcher: Sendable {
             interval: object["interval"]?.intValue ?? 1,
             endDate: try parseOptionalDateValue(object["end_date"]),
             occurrenceCount: object["occurrence_count"]?.intValue,
-            daysOfWeek: object["days_of_week"]?.arrayValue?.compactMap { $0.stringValue }.compactMap(EventWeekday.init(rawValue:)) ?? [],
+            daysOfWeek: object["days_of_week"]?.arrayValue?.compactMap { $0.stringValue }.compactMap(
+                EventWeekday.init(rawValue:)) ?? [],
             daysOfMonth: object["days_of_month"]?.arrayValue?.compactMap(\.intValue) ?? [],
             monthsOfYear: object["months_of_year"]?.arrayValue?.compactMap(\.intValue) ?? [],
             setPositions: object["set_positions"]?.arrayValue?.compactMap(\.intValue) ?? []
@@ -438,9 +453,10 @@ public struct ToolDispatcher: Sendable {
 
     private func parseAvailabilityArray(from arguments: [String: Value]?) throws -> [EventAvailability] {
         try (ToolArgumentParser.optionalStringArray("availability_in", from: arguments) ?? []).map { raw in
-            try parseAvailabilityValue(raw) ?? {
-                throw ToolError.invalidArguments("Unsupported availability: \(raw)")
-            }()
+            try parseAvailabilityValue(raw)
+                ?? {
+                    throw ToolError.invalidArguments("Unsupported availability: \(raw)")
+                }()
         }
     }
 
@@ -479,7 +495,8 @@ public struct ToolDispatcher: Sendable {
         return valueWasProvided ? .unspecified : .unspecified
     }
 
-    private func patchValue<T>(clearFlag: Bool, value: T?, key _: String, valueWasProvided: Bool = true) throws -> OptionalPatch<T>
+    private func patchValue<T>(clearFlag: Bool, value: T?, key _: String, valueWasProvided: Bool = true) throws
+        -> OptionalPatch<T>
     where T: Equatable & Sendable {
         patchValue(clearFlag: clearFlag, value: value, valueWasProvided: valueWasProvided)
     }

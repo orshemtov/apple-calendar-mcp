@@ -140,7 +140,8 @@ public actor EventKitEventStore: EventStoreProtocol {
     public func events(query: EventQuery) async throws -> [CalendarEvent] {
         try await ensureAccess()
         let calendars = try calendarsForIDs(query.calendarIDs)
-        let predicate = eventStore.predicateForEvents(withStart: query.starting, end: query.ending, calendars: calendars)
+        let predicate = eventStore.predicateForEvents(
+            withStart: query.starting, end: query.ending, calendars: calendars)
         let events = eventStore.events(matching: predicate)
 
         let filtered = events.filter { event in
