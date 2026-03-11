@@ -36,7 +36,7 @@ runs:
         python3 -m venv .release-venv
         . .release-venv/bin/activate
         python3 -m pip install --quiet semver
-        python3 .github/scripts/prepare_release.py \
+        python3 "${{ github.action_path }}/../../scripts/prepare_release.py" \
           --event-name "${{ inputs.event_name }}" \
           --ref-name "${{ inputs.ref_name }}" \
           --release-type "${{ inputs.release_type }}" \

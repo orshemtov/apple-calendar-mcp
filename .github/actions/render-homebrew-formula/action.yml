@@ -21,7 +21,7 @@ runs:
     - shell: bash
       run: |
         set -euo pipefail
-        python3 .github/scripts/render_homebrew_formula.py \
+        python3 "${{ github.action_path }}/../../scripts/render_homebrew_formula.py" \
           --url "${{ inputs.archive_url }}" \
           --sha256 "${{ inputs.sha256 }}" \
           --version "${{ inputs.version }}" \
